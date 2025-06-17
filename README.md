@@ -6,7 +6,7 @@ Este proyecto es una aplicación web desarrollada con Spring Boot, PostgreSQL y 
 
 La aplicación está desplegada y disponible en:
 
-👉 [https://mi-sistema-publicaciones.onrender.com](https://mi-sistema-publicaciones.onrender.com)
+👉 [https://daw-lab13-c0em.onrender.com](https://daw-lab13-c0em.onrender.com)
 
 ## ⚙️ Tecnologías
 
