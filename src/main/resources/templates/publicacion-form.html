@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Publicación</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="bi bi-journal-bookmark"></i>
+            Sistema de Publicaciones
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/autores-list">Autores</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/publicaciones-list">Publicaciones</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-book me-2"></i>
+                        <span id="formTitle">Nueva Publicación</span>
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="publicacionForm">
+                        <input type="hidden" id="publicacionId">
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="titulo" class="form-label">
+                                        <i class="fas fa-tag me-2"></i>Título de la Publicación
+                                    </label>
+                                    <input type="text" class="form-control" id="titulo" name="titulo" required
+                                           placeholder="Ingrese el título">
+                                    <div class="invalid-feedback">
+                                        Por favor ingrese un título válido.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="autores" class="form-label">
+                                        <i class="fas fa-user me-2"></i>Autores
+                                    </label>
+                                    <select class="form-select" id="autores" multiple size="5">
+                                        <!-- Los autores se cargarán dinámicamente -->
+                                    </select>
+                                    <div class="form-text">
+                                        Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples autores
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">
+                                <i class="fas fa-align-left me-2"></i>Descripción
+                            </label>
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="4"
+                                      placeholder="Ingrese una breve sinopsis o resumen de la publicación"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <h6><i class="fas fa-list me-2"></i>Autores Seleccionados:</h6>
+                            <div id="autoresSeleccionados" class="border rounded p-3 bg-light">
+                                <em class="text-muted">No hay autores seleccionados</em>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/publicaciones-list" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-save me-2"></i>Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+    let isEditing = false;
+    let publicacionId = null;
+    let todosLosAutores = [];
+
+    document.addEventListener('DOMContentLoaded', function () {
+        cargarAutores();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+
+        if (id) {
+            isEditing = true;
+            publicacionId = id;
+            document.getElementById('formTitle').textContent = 'Editar Publicación';
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save me-2"></i>Actualizar';
+            setTimeout(() => cargarPublicacion(id), 500);
+        }
+
+        document.getElementById('autores').addEventListener('change', actualizarAutoresSeleccionados);
+        document.getElementById('publicacionForm').addEventListener('submit', manejarSubmit);
+    });
+
+    async function cargarAutores() {
+        try {
+            const response = await fetch('/api/autores');
+            const autores = await response.json();
+            todosLosAutores = autores;
+
+            const select = document.getElementById('autores');
+            select.innerHTML = '';
+
+            autores.forEach(autor => {
+                const option = document.createElement('option');
+                option.value = autor.id;
+                option.textContent = autor.nombre;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error al cargar autores:', error);
+            alert('Error al cargar los autores');
+        }
+    }
+
+    async function cargarPublicacion(id) {
+        try {
+            const response = await fetch(`/api/publicaciones/${id}`);
+            if (response.ok) {
+                const publicacion = await response.json();
+
+                document.getElementById('publicacionId').value = publicacion.id;
+                document.getElementById('titulo').value = publicacion.titulo;
+                document.getElementById('descripcion').value = publicacion.descripcion || '';
+
+                const select = document.getElementById('autores');
+                const autorIds = publicacion.autores ? publicacion.autores.map(a => a.id.toString()) : [];
+
+                Array.from(select.options).forEach(option => {
+                    option.selected = autorIds.includes(option.value);
+                });
+
+                actualizarAutoresSeleccionados();
+            } else {
+                alert('Error al cargar la publicación');
+            }
+        } catch (error) {
+            console.error('Error al cargar publicación:', error);
+            alert('Error al cargar la publicación');
+        }
+    }
+
+    function actualizarAutoresSeleccionados() {
+        const select = document.getElementById('autores');
+        const selectedOptions = Array.from(select.selectedOptions);
+        const container = document.getElementById('autoresSeleccionados');
+
+        if (selectedOptions.length === 0) {
+            container.innerHTML = '<em class="text-muted">No hay autores seleccionados</em>';
+            return;
+        }
+
+        const autoresHtml = selectedOptions.map(option =>
+            `<span class="badge bg-primary me-2 mb-2">
+                <i class="fas fa-user me-1"></i>${option.textContent}
+            </span>`
+        ).join('');
+
+        container.innerHTML = autoresHtml;
+    }
+
+    async function manejarSubmit(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const formData = new FormData(form);
+
+        const titulo = formData.get('titulo').trim();
+        if (!titulo) {
+            document.getElementById('titulo').classList.add('is-invalid');
+            return;
+        } else {
+            document.getElementById('titulo').classList.remove('is-invalid');
+        }
+
+        const select = document.getElementById('autores');
+        const autoresSeleccionados = Array.from(select.selectedOptions).map(option => ({
+            id: parseInt(option.value)
+        }));
+
+        const publicacion = {
+            titulo: titulo,
+            descripcion: formData.get('descripcion') || '',
+            autores: autoresSeleccionados
+        };
+
+        try {
+            let response;
+
+            if (isEditing) {
+                response = await fetch(`/api/publicaciones/${publicacionId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(publicacion)
+                });
+            } else {
+                response = await fetch('/api/publicaciones', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(publicacion)
+                });
+            }
+
+            if (response.ok) {
+                alert(isEditing ? 'Publicación actualizada correctamente' : 'Publicación creada correctamente');
+                window.location.href = '/publicaciones-list';
+            } else {
+                throw new Error('Error en la respuesta del servidor');
+            }
+
+        } catch (error) {
+            console.error('Error al guardar publicación:', error);
+            alert('Error al guardar la publicación. Por favor, intente nuevamente.');
+        }
+    }
+</script>
+</body>
+</html>

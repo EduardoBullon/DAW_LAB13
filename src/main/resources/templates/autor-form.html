@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Autor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="bi bi-journal-bookmark"></i>
+            Sistema de Publicaciones
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/autores-list">Autores</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/publicaciones-list">Publicaciones</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user me-2"></i>
+                        <span id="formTitle">Nuevo Autor</span>
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="autorForm">
+                        <input type="hidden" id="autorId">
+
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">
+                                <i class="fas fa-tag me-2"></i>Nombre del Autor
+                            </label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required
+                                   placeholder="Ingrese el nombre del autor">
+                            <div class="invalid-feedback">
+                                Por favor ingrese un nombre válido.
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/autores-list" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                            <button type="submit" class="btn btn-success" id="submitBtn">
+                                <i class="fas fa-save me-2"></i>Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+    let isEditing = false;
+    let autorId = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+
+        if (id) {
+            isEditing = true;
+            autorId = id;
+            document.getElementById('formTitle').textContent = 'Editar Autor';
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save me-2"></i>Actualizar';
+            cargarAutor(id);
+        }
+    });
+
+    async function cargarAutor(id) {
+        try {
+            const response = await fetch(`/api/autores/${id}`);
+            if (response.ok) {
+                const autor = await response.json();
+                document.getElementById('autorId').value = autor.id;
+                document.getElementById('nombre').value = autor.nombre;
+            } else {
+                alert('Error al cargar el autor');
+                window.location.href = '/autores-list';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al cargar el autor');
+            window.location.href = '/autores-list';
+        }
+    }
+
+    document.getElementById('autorForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const formData = new FormData(form);
+
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
+
+        const autorData = {
+            nombre: formData.get('nombre')
+        };
+
+        try {
+            let response;
+            if (isEditing) {
+                response = await fetch(`/api/autores/${autorId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(autorData)
+                });
+            } else {
+                response = await fetch('/api/autores', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(autorData)
+                });
+            }
+
+            if (response.ok) {
+                alert(isEditing ? 'Autor actualizado correctamente' : 'Autor creado correctamente');
+                window.location.href = '/autores-list';
+            } else {
+                alert('Error al guardar el autor');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al guardar el autor');
+        }
+    });
+
+    document.getElementById('nombre').addEventListener('input', function () {
+        this.classList.remove('is-invalid');
+        this.parentElement.querySelector('.invalid-feedback').style.display = 'none';
+    });
+</script>
+</body>
+</html>
