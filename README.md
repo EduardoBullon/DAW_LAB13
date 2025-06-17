@@ -33,4 +33,4 @@ La aplicación está desplegada y disponible en:
 
 ---
 
-Desarrollado para fines académicos – DAW, Semana 13 ✨
+Eduardo Bullon – DAW, Semana 13 ✨
